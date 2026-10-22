@@ -1,0 +1,32 @@
+# Local integration stack. Set POSTGRES_PASSWORD in your shell before starting.
+services:
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_DB: unistay
+      POSTGRES_USER: unistay
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: [CMD-SHELL, pg_isready -U unistay -d unistay]
+      interval: 5s
+      retries: 10
+  api:
+    build: .
+    environment:
+      DEBUG: "true"
+      ALLOWED_HOSTS: localhost,127.0.0.1
+      DATABASE_URL: postgresql://unistay:${POSTGRES_PASSWORD}@db:5432/unistay
+      EMAIL_BACKEND: django.core.mail.backends.console.EmailBackend
+      FRONTEND_URL: http://localhost:3000
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "127.0.0.1:8000:8000"
+    volumes:
+      - uploads:/app/media
+volumes:
+  postgres_data:
+  uploads:
